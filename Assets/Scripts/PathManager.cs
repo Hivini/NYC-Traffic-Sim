@@ -1,16 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PathManager : MonoBehaviour
 {
+    public Text clockText;
     public GameObject car;
     public GameObject startLocation;
     public GameObject destinationLocation;
     public float speed = 5f;
+    public float realSecondsPerDay = 60f;
 
     private List<GameObject> path;
     private int currentIndex;
+    private float day;
 
     // Start is called before the first frame update
     void Start()
@@ -22,11 +26,20 @@ public class PathManager : MonoBehaviour
             Debug.Log(p.name);
         }
         currentIndex = 0;
+        day = 0;
     }
 
     // Update is called once per frame
     void Update()
     {
+        day += Time.deltaTime / realSecondsPerDay;
+        float dayNormalized = day % 1f;
+
+        string hoursString = Mathf.Floor(dayNormalized * 24f).ToString("00");
+        string minutesString = Mathf.Floor(((dayNormalized * 24) % 1f) * 60f).ToString("00");
+
+        clockText.text = $"Time {hoursString}:{minutesString}";
+
         if (currentIndex != path.Count)
         {
             car.transform.position = Vector3.MoveTowards(
