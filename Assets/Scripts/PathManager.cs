@@ -9,7 +9,7 @@ public class PathManager : MonoBehaviour
     public GameObject car;
     public GameObject startLocation;
     public GameObject destinationLocation;
-    public float speed = 5f;
+    public float taxiSpeed = 250f;
     public float realSecondsPerDay = 60f;
 
     private List<GameObject> path;
@@ -45,11 +45,13 @@ public class PathManager : MonoBehaviour
             car.transform.position = Vector3.MoveTowards(
                 car.transform.position,
                 path[currentIndex].transform.position,
-                Time.deltaTime * speed);
+                Time.deltaTime * 1 / realSecondsPerDay * taxiSpeed);
             // Probably the float numbers will cause an issue here if it's not close enough (?).
             if (car.transform.position == path[currentIndex].transform.position) {
                 currentIndex++;
             }
+        } else {
+            currentIndex = 0;
         }
     }
 
