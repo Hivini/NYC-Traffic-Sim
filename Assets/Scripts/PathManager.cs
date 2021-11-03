@@ -43,7 +43,6 @@ public class PathManager : MonoBehaviour
             var startIndex = GetLocationIndex(index);
             var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[index].ToArray());
             var endIndex = GetLocationIndex(transitionIndex);
-            Debug.Log(endIndex);
             object[] taxiParams = new object[3]{locations[startIndex], locations[endIndex], transitionIndex};
             StartCoroutine("NewTaxi", taxiParams);
         }
@@ -60,9 +59,6 @@ public class PathManager : MonoBehaviour
         GameObject end = (GameObject) taxiParams[1];
         int transitionIndex = (int) taxiParams[2];
         var path = DepthFirstSearch(start, end);
-        foreach(var n in path) {
-            Debug.Log(n);
-        }
         int currentIndex = 0;
         int destinationIndex = path.Count;
         var newTaxi = Instantiate(taxiPrefab, start.transform.position, taxiPrefab.transform.rotation);
@@ -72,11 +68,8 @@ public class PathManager : MonoBehaviour
                 start = end;
                 transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[transitionIndex].ToArray());
                 var endIndex = GetLocationIndex(transitionIndex);
-                Debug.Log(endIndex);
                 end = locations[endIndex];
                 currentIndex = 0;
-                Debug.Log(start);
-                Debug.Log(end);
                 path = DepthFirstSearch(start, end);
                 destinationIndex = path.Count;
             }
@@ -106,12 +99,8 @@ public class PathManager : MonoBehaviour
 
     List<GameObject> DFSHelper(List<GameObject> path, List<GameObject> visited, GameObject current, GameObject dest)
     {
-        Debug.Log("Start " + current.name);
-        Debug.Log("End " + dest.name);
         visited.Add(current);
         path.Add(current);
-        Debug.Log("Path " + path.Count);
-        Debug.Log("-----");
         if (current == dest)
         {
             return path;
@@ -206,7 +195,6 @@ internal class DataManager
             }
             values.Add(lineValues);
         }
-        Debug.Log(values.Count);
         reader.Close();
         return values;
     }
