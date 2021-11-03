@@ -38,12 +38,13 @@ public class PathManager : MonoBehaviour
         clockText.text = $"Time {hoursString}:{minutesString}";
 
         if (Input.GetKeyDown(KeyCode.A)) {
+            // TODO(hivini): Use the actual locations lol.
             var index = Random.Range(0, DataManager.NUM_OF_ELEMENTS);
             var startIndex = GetLocationIndex(index);
             var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[index].ToArray());
             var endIndex = GetLocationIndex(transitionIndex);
             Debug.Log(endIndex);
-            object[] taxiParams = new object[3]{locations[2], locations[3], transitionIndex};
+            object[] taxiParams = new object[3]{locations[startIndex], locations[endIndex], transitionIndex};
             StartCoroutine("NewTaxi", taxiParams);
         }
     }
