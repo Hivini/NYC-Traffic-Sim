@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class Car : MonoBehaviour
 {
-    public Vector3 startLocation;
+    public GameObject startLocation;
 
     void Awake()
     {
-        transform.position = startLocation;
+        transform.position = startLocation.transform.position;
     }
 
     // Start is called before the first frame update

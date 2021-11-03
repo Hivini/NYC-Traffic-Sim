@@ -14,6 +14,7 @@ public class PathManager : MonoBehaviour
 
     private List<GameObject> path;
     private int currentIndex;
+    private int destinationIndex;
     private float day;
 
     // Start is called before the first frame update
@@ -26,6 +27,7 @@ public class PathManager : MonoBehaviour
             Debug.Log(p.name);
         }
         currentIndex = 0;
+        destinationIndex = path.Count;
         day = 0;
     }
 
@@ -40,7 +42,7 @@ public class PathManager : MonoBehaviour
 
         clockText.text = $"Time {hoursString}:{minutesString}";
 
-        if (currentIndex != path.Count)
+        if (currentIndex != destinationIndex)
         {
             car.transform.position = Vector3.MoveTowards(
                 car.transform.position,
@@ -48,10 +50,17 @@ public class PathManager : MonoBehaviour
                 Time.deltaTime * 1 / realSecondsPerDay * taxiSpeed);
             // Probably the float numbers will cause an issue here if it's not close enough (?).
             if (car.transform.position == path[currentIndex].transform.position) {
-                currentIndex++;
+                if (destinationIndex == 0) {
+                    currentIndex--;
+                } else {
+                    currentIndex++;
+                }
             }
         } else {
-            currentIndex = 0;
+            currentIndex = currentIndex == path.Count ? path.Count - 1 : 0;
+            destinationIndex = currentIndex == 0 ? path.Count : 0;
+            Debug.Log(currentIndex);
+            Debug.Log(destinationIndex);
         }
     }
 
