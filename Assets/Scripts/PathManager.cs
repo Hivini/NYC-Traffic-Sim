@@ -8,6 +8,7 @@ public class PathManager : MonoBehaviour
 {
     public Text clockText;
     public GameObject taxiPrefab;
+    public GameObject locationPrefab;
     public float taxiSpeed = 250f;
     public float realSecondsPerDay = 60f;
     private float day;
@@ -15,14 +16,23 @@ public class PathManager : MonoBehaviour
     private DataManager dataManager;
     private GameObject[] locations;
 
-    void Start() {
+    void Start()
+    {
         dataManager = new DataManager();
-        locations = new GameObject[4];
+        CreateChildLocations();
+        locations = new GameObject[DataManager.NUM_OF_ELEMENTS];
+        Debug.Log(transform.childCount);
         int c = 0;
         foreach (Transform child in transform)
         {
             locations[c] = child.gameObject;
             c++;
+        }
+        for (int i = 0; i < 1000; i++) {
+            var startIndex = Random.Range(0, DataManager.NUM_OF_ELEMENTS);
+            var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
+            object[] taxiParams = new object[3] { locations[startIndex], locations[transitionIndex], transitionIndex };
+            StartCoroutine("NewTaxi", taxiParams);
         }
     }
 
@@ -36,39 +46,74 @@ public class PathManager : MonoBehaviour
         string minutesString = Mathf.Floor(((dayNormalized * 24) % 1f) * 60f).ToString("00");
 
         clockText.text = $"Time {hoursString}:{minutesString}";
+    }
 
-        if (Input.GetKeyDown(KeyCode.A)) {
-            // TODO(hivini): Use the actual locations lol.
-            var index = Random.Range(0, DataManager.NUM_OF_ELEMENTS);
-            var startIndex = GetLocationIndex(index);
-            var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[index].ToArray());
-            var endIndex = GetLocationIndex(transitionIndex);
-            object[] taxiParams = new object[3]{locations[startIndex], locations[endIndex], transitionIndex};
-            StartCoroutine("NewTaxi", taxiParams);
+    private void CreateChildLocations()
+    {
+        GameObject parent = Instantiate(
+            locationPrefab,
+            transform.position + new Vector3(0, 1, 0),
+            transform.rotation);
+        parent.transform.parent = transform;
+        parent.gameObject.name = $"Location PADRE";
+
+        GameObject previous1 = parent;
+        GameObject previous2 = parent;
+        bool connect = false;
+        for (int i = 0; i < 264; i += 2)
+        {
+            GameObject child1 = Instantiate(
+                locationPrefab,
+                transform.position + new Vector3(-5, -i, 0),
+                transform.rotation);
+            child1.transform.parent = transform;
+            child1.gameObject.name = $"Location {i + 1}";
+            GameObject child2 = Instantiate(
+                locationPrefab,
+                transform.position + new Vector3(5, -i, 0),
+                transform.rotation);
+            child2.transform.parent = transform;
+            child2.gameObject.name = $"Location {i + 2}";
+
+            if (previous1 != null)
+            {
+                previous1.GetComponent<Location>().nextLocations.Add(child1);
+                child1.GetComponent<Location>().nextLocations.Add(previous1);
+            }
+            previous1 = child1;
+            if (previous2 != null)
+            {
+                previous2.GetComponent<Location>().nextLocations.Add(child2);
+                child2.GetComponent<Location>().nextLocations.Add(previous2);
+            }
+            previous2 = child2;
+
+            if (connect)
+            {
+                child1.GetComponent<Location>().nextLocations.Add(child2);
+                child2.GetComponent<Location>().nextLocations.Add(child1);
+            }
+            connect = !connect;
         }
     }
 
-    private int GetLocationIndex(float transitionIndex) {
-        var index = Mathf.CeilToInt(transitionIndex / 67f);
-        return index == 0 ? 0 : index - 1;
-    }
-
-    IEnumerator NewTaxi(object[] taxiParams) 
+    IEnumerator NewTaxi(object[] taxiParams)
     {
-        GameObject start = (GameObject) taxiParams[0];
-        GameObject end = (GameObject) taxiParams[1];
-        int transitionIndex = (int) taxiParams[2];
+        GameObject start = (GameObject)taxiParams[0];
+        GameObject end = (GameObject)taxiParams[1];
+        int transitionIndex = (int)taxiParams[2];
         var path = DepthFirstSearch(start, end);
         int currentIndex = 0;
         int destinationIndex = path.Count;
         var newTaxi = Instantiate(taxiPrefab, start.transform.position, taxiPrefab.transform.rotation);
-        while (true) {
-            if (currentIndex >= destinationIndex) {
+        while (true)
+        {
+            if (currentIndex >= destinationIndex)
+            {
                 // Has arrived to destination
                 start = end;
                 transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[transitionIndex].ToArray());
-                var endIndex = GetLocationIndex(transitionIndex);
-                end = locations[endIndex];
+                end = locations[transitionIndex];
                 currentIndex = 0;
                 path = DepthFirstSearch(start, end);
                 destinationIndex = path.Count;
@@ -78,7 +123,8 @@ public class PathManager : MonoBehaviour
                 path[currentIndex].transform.position,
                 Time.deltaTime * 1 / realSecondsPerDay * taxiSpeed);
             // Probably the float numbers will cause an issue here if it's not close enough (?).
-            if (newTaxi.transform.position == path[currentIndex].transform.position) {
+            if (newTaxi.transform.position == path[currentIndex].transform.position)
+            {
                 currentIndex++;
             }
             yield return null;
@@ -173,24 +219,29 @@ internal class DataManager
     // TODO(hivini): Talk about existential pain.
     public List<float> rideOrigin;
 
-    public DataManager() {
+    public DataManager()
+    {
         transitionMatrix = loadCSV(TRANSITION_MATRIX_FILE);
         speedHistogram = loadCSV(SPEED_FILE);
         timeHistogram = loadCSV(TIME_HISTOGRAM_FILE);
     }
 
-    private List<List<float>> loadCSV(string file) {
-        StreamReader reader = new StreamReader(DEFAULT_PATH + file); 
+    private List<List<float>> loadCSV(string file)
+    {
+        StreamReader reader = new StreamReader(DEFAULT_PATH + file);
         var content = reader.ReadToEnd();
         var lines = content.Split('\n');
         var values = new List<List<float>>();
-        foreach (var line in lines) {
+        foreach (var line in lines)
+        {
             var elements = line.Split(',');
-            if (elements.Length != NUM_OF_ELEMENTS) {
+            if (elements.Length != NUM_OF_ELEMENTS)
+            {
                 continue;
             }
             var lineValues = new List<float>();
-            foreach(var e in elements) {
+            foreach (var e in elements)
+            {
                 lineValues.Add(float.Parse(e));
             }
             values.Add(lineValues);
