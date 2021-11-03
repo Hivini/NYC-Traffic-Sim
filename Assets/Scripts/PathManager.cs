@@ -167,6 +167,8 @@ public class PathManager : MonoBehaviour
         return null;
     }
 
+    // Code taken from: https://forum.unity.com/threads/random-numbers-with-a-weighted-chance.442190/
+    // since Unity does not have a function like numpy to do this.
     public int GetRandomWeightedIndex(float[] weights)
     {
         if (weights == null || weights.Length == 0) return -1;
@@ -216,7 +218,6 @@ internal class DataManager
     public List<List<float>> transitionMatrix;
     public List<List<float>> speedHistogram;
     public List<List<float>> timeHistogram;
-    // TODO(hivini): Talk about existential pain.
     public List<float> rideOrigin;
 
     public DataManager()
