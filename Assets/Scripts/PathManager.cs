@@ -8,14 +8,22 @@ public class PathManager : MonoBehaviour
 {
     public Text clockText;
     public GameObject taxiPrefab;
-    public GameObject startLocation;
-    public GameObject destinationLocation;
     public float taxiSpeed = 250f;
     public float realSecondsPerDay = 60f;
     private float day;
 
+    private DataManager dataManager;
+    private GameObject[] locations;
+
     void Start() {
-        var dataLoader = new DataManager();
+        dataManager = new DataManager();
+        locations = new GameObject[4];
+        int c = 0;
+        foreach (Transform child in transform)
+        {
+            locations[c] = child.gameObject;
+            c++;
+        }
     }
 
     // Update is called once per frame
@@ -30,20 +38,26 @@ public class PathManager : MonoBehaviour
         clockText.text = $"Time {hoursString}:{minutesString}";
 
         if (Input.GetKeyDown(KeyCode.A)) {
-            object[] taxiParams = new object[2]{startLocation, destinationLocation};
+            var index = Random.Range(0, DataManager.NUM_OF_ELEMENTS);
+            var startIndex = GetLocationIndex(index);
+            var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[index].ToArray());
+            var endIndex = GetLocationIndex(transitionIndex);
+            Debug.Log(endIndex);
+            object[] taxiParams = new object[3]{locations[2], locations[3], transitionIndex};
             StartCoroutine("NewTaxi", taxiParams);
         }
+    }
 
-        if (Input.GetKeyDown(KeyCode.B)) {
-            object[] taxiParams = new object[2]{destinationLocation, startLocation};
-            StartCoroutine("NewTaxi", taxiParams);
-        }
+    private int GetLocationIndex(float transitionIndex) {
+        var index = Mathf.CeilToInt(transitionIndex / 67f);
+        return index == 0 ? 0 : index - 1;
     }
 
     IEnumerator NewTaxi(object[] taxiParams) 
     {
         GameObject start = (GameObject) taxiParams[0];
         GameObject end = (GameObject) taxiParams[1];
+        int transitionIndex = (int) taxiParams[2];
         var path = DepthFirstSearch(start, end);
         foreach(var n in path) {
             Debug.Log(n);
@@ -51,7 +65,20 @@ public class PathManager : MonoBehaviour
         int currentIndex = 0;
         int destinationIndex = path.Count;
         var newTaxi = Instantiate(taxiPrefab, start.transform.position, taxiPrefab.transform.rotation);
-        while (currentIndex < destinationIndex) {
+        while (true) {
+            if (currentIndex >= destinationIndex) {
+                // Has arrived to destination
+                start = end;
+                transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[transitionIndex].ToArray());
+                var endIndex = GetLocationIndex(transitionIndex);
+                Debug.Log(endIndex);
+                end = locations[endIndex];
+                currentIndex = 0;
+                Debug.Log(start);
+                Debug.Log(end);
+                path = DepthFirstSearch(start, end);
+                destinationIndex = path.Count;
+            }
             newTaxi.transform.position = Vector3.MoveTowards(
                 newTaxi.transform.position,
                 path[currentIndex].transform.position,
@@ -62,8 +89,6 @@ public class PathManager : MonoBehaviour
             }
             yield return null;
         }
-        Destroy(newTaxi);
-        Debug.Log("Destroyed");
     }
 
     List<GameObject> DepthFirstSearch(GameObject st, GameObject dest)
@@ -80,8 +105,12 @@ public class PathManager : MonoBehaviour
 
     List<GameObject> DFSHelper(List<GameObject> path, List<GameObject> visited, GameObject current, GameObject dest)
     {
+        Debug.Log("Start " + current.name);
+        Debug.Log("End " + dest.name);
         visited.Add(current);
         path.Add(current);
+        Debug.Log("Path " + path.Count);
+        Debug.Log("-----");
         if (current == dest)
         {
             return path;
@@ -91,20 +120,57 @@ public class PathManager : MonoBehaviour
         {
             if (!visited.Contains(location))
             {
-                path = DFSHelper(path, visited, location, dest);
-                if (path != null)
+                var newPath = new List<GameObject>(path);
+                var lPath = DFSHelper(newPath, visited, location, dest);
+                if (lPath != null)
                 {
-                    return path;
+                    return lPath;
                 }
             }
         }
         return null;
     }
+
+    public int GetRandomWeightedIndex(float[] weights)
+    {
+        if (weights == null || weights.Length == 0) return -1;
+
+        float w;
+        float t = 0;
+        int i;
+        for (i = 0; i < weights.Length; i++)
+        {
+            w = weights[i];
+
+            if (float.IsPositiveInfinity(w))
+            {
+                return i;
+            }
+            else if (w >= 0f && !float.IsNaN(w))
+            {
+                t += weights[i];
+            }
+        }
+
+        float r = Random.value;
+        float s = 0f;
+
+        for (i = 0; i < weights.Length; i++)
+        {
+            w = weights[i];
+            if (float.IsNaN(w) || w <= 0f) continue;
+
+            s += w / t;
+            if (s >= r) return i;
+        }
+
+        return -1;
+    }
 }
 
 internal class DataManager
 {
-    private const int NUM_OF_ELEMENTS = 265;
+    public const int NUM_OF_ELEMENTS = 265;
     private const string DEFAULT_PATH = "Assets/Data/";
     private const string RIDE_ORIGIN_FILE = "taxis_ride_origin_counting.csv";
     private const string SPEED_FILE = "taxis_speed_histogram.csv";
