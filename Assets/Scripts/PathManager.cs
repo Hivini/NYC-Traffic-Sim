@@ -6,30 +6,12 @@ using UnityEngine.UI;
 public class PathManager : MonoBehaviour
 {
     public Text clockText;
-    public GameObject car;
+    public GameObject taxiPrefab;
     public GameObject startLocation;
     public GameObject destinationLocation;
     public float taxiSpeed = 250f;
     public float realSecondsPerDay = 60f;
-
-    private List<GameObject> path;
-    private int currentIndex;
-    private int destinationIndex;
     private float day;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        path = BreadthFirstSearch();
-        Debug.Log("PATH");
-        foreach (var p in path)
-        {
-            Debug.Log(p.name);
-        }
-        currentIndex = 0;
-        destinationIndex = path.Count;
-        day = 0;
-    }
 
     // Update is called once per frame
     void Update()
@@ -42,33 +24,48 @@ public class PathManager : MonoBehaviour
 
         clockText.text = $"Time {hoursString}:{minutesString}";
 
-        if (currentIndex != destinationIndex)
-        {
-            car.transform.position = Vector3.MoveTowards(
-                car.transform.position,
-                path[currentIndex].transform.position,
-                Time.deltaTime * 1 / realSecondsPerDay * taxiSpeed);
-            // Probably the float numbers will cause an issue here if it's not close enough (?).
-            if (car.transform.position == path[currentIndex].transform.position) {
-                if (destinationIndex == 0) {
-                    currentIndex--;
-                } else {
-                    currentIndex++;
-                }
-            }
-        } else {
-            currentIndex = currentIndex == path.Count ? path.Count - 1 : 0;
-            destinationIndex = currentIndex == 0 ? path.Count : 0;
-            Debug.Log(currentIndex);
-            Debug.Log(destinationIndex);
+        if (Input.GetKeyDown(KeyCode.A)) {
+            object[] taxiParams = new object[2]{startLocation, destinationLocation};
+            StartCoroutine("NewTaxi", taxiParams);
+        }
+
+        if (Input.GetKeyDown(KeyCode.B)) {
+            object[] taxiParams = new object[2]{destinationLocation, startLocation};
+            StartCoroutine("NewTaxi", taxiParams);
         }
     }
 
-    List<GameObject> BreadthFirstSearch()
+    IEnumerator NewTaxi(object[] taxiParams) 
+    {
+        GameObject start = (GameObject) taxiParams[0];
+        GameObject end = (GameObject) taxiParams[1];
+        var path = DepthFirstSearch(start, end);
+        foreach(var n in path) {
+            Debug.Log(n);
+        }
+        int currentIndex = 0;
+        int destinationIndex = path.Count;
+        var newTaxi = Instantiate(taxiPrefab, start.transform.position, taxiPrefab.transform.rotation);
+        while (currentIndex < destinationIndex) {
+            newTaxi.transform.position = Vector3.MoveTowards(
+                newTaxi.transform.position,
+                path[currentIndex].transform.position,
+                Time.deltaTime * 1 / realSecondsPerDay * taxiSpeed);
+            // Probably the float numbers will cause an issue here if it's not close enough (?).
+            if (newTaxi.transform.position == path[currentIndex].transform.position) {
+                currentIndex++;
+            }
+            yield return null;
+        }
+        Destroy(newTaxi);
+        Debug.Log("Destroyed");
+    }
+
+    List<GameObject> DepthFirstSearch(GameObject st, GameObject dest)
     {
         List<GameObject> path = new List<GameObject>();
         List<GameObject> visited = new List<GameObject>();
-        path = BFSHelper(path, visited, startLocation);
+        path = DFSHelper(path, visited, st, dest);
         if (path == null)
         {
             throw new System.Exception("There is no valid path from start to end location");
@@ -76,11 +73,11 @@ public class PathManager : MonoBehaviour
         return path;
     }
 
-    List<GameObject> BFSHelper(List<GameObject> path, List<GameObject> visited, GameObject current)
+    List<GameObject> DFSHelper(List<GameObject> path, List<GameObject> visited, GameObject current, GameObject dest)
     {
         visited.Add(current);
         path.Add(current);
-        if (current == destinationLocation)
+        if (current == dest)
         {
             return path;
         }
@@ -89,7 +86,7 @@ public class PathManager : MonoBehaviour
         {
             if (!visited.Contains(location))
             {
-                path = BFSHelper(path, visited, location);
+                path = DFSHelper(path, visited, location, dest);
                 if (path != null)
                 {
                     return path;
