@@ -90,9 +90,8 @@ speed_histogram = speed_histogram[:]  / sum(speed_histogram)
 
 # saving matrix and histograms
 np.save('taxis_transition_matrix.npy', transition_matrix)
-np.save('taxis_speed_histogram.npy', transition_matrix)
-np.save(f'taxis_time_histogram_window_of_{window_in_minutes}_minutes.npy', 
-transition_matrix)
+np.save('taxis_speed_histogram.npy', speed_histogram)
+np.save(f'taxis_time_histogram_window_of_{window_in_minutes}_minutes.npy', time_histogram)
 np.save(f'taxis_ride_origin_counting.npy', events_per_location)
 
 
