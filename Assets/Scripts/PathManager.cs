@@ -11,14 +11,15 @@ public class PathManager : MonoBehaviour
     public GameObject locationPrefab;
     public float maxTaxiSpeed = 250f;
     public float realSecondsPerDay = 60f;
-    private float day;
+    public int maxStartTaxisPerLocation = 500;
 
+    private float day;
     private DataManager dataManager;
     private GameObject[] locations;
 
     void Start()
     {
-        dataManager = new DataManager();
+        dataManager = new DataManager(maxStartTaxisPerLocation);
         // TODO(hivini): Change to real locations.
         CreateChildLocations();
         locations = new GameObject[DataManager.NUM_OF_ELEMENTS];
@@ -28,8 +29,9 @@ public class PathManager : MonoBehaviour
             locations[c] = child.gameObject;
             c++;
         }
-        for (int i = 0; i < 1000; i++) {
-            var startIndex = Random.Range(0, DataManager.NUM_OF_ELEMENTS);
+        for (int l = 0; l < locations.Length; l++) {
+            for (int i = 0; i < dataManager.rideOriginCount[l]; i++) {
+            var startIndex = l;
             var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
             var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
             object[] taxiParams = new object[4] { 
@@ -38,6 +40,7 @@ public class PathManager : MonoBehaviour
                 transitionIndex,
                 speedIndex };
             StartCoroutine("NewTaxi", taxiParams);
+        }
         }
     }
 
@@ -219,7 +222,7 @@ internal class DataManager
 {
     public const int NUM_OF_ELEMENTS = 265;
     private const string DEFAULT_PATH = "Assets/Data/";
-    private const string RIDE_ORIGIN_FILE = "taxis_ride_origin_counting.csv";
+    private const string RIDE_ORIGIN_FILE = "taxis_ride_origin_normalized.csv";
     private const string SPEED_FILE = "taxis_speed_histogram.csv";
     private const string TIME_HISTOGRAM_FILE = "taxis_time_histogram_window_of_10_minutes.csv";
     private const string TRANSITION_MATRIX_FILE = "taxis_transition_matrix.csv";
@@ -228,9 +231,10 @@ internal class DataManager
     public float[] speedHistogram;
     public float[] speedCDF;
     public float[] timeHistogram;
-    public float[] rideOrigin;
+    public float[] rideOriginNormalized;
+    public int[] rideOriginCount;
 
-    public DataManager()
+    public DataManager(int maxTaxisPerLocation)
     {
         transitionMatrix = loadCSVMatrix(TRANSITION_MATRIX_FILE);
         timeHistogram = loadCSVLineList(TIME_HISTOGRAM_FILE).ToArray();
@@ -242,6 +246,19 @@ internal class DataManager
             cdf.Add(sum);
         }
         speedCDF = cdf.ToArray();
+        rideOriginNormalized = loadCSVLineList(RIDE_ORIGIN_FILE).ToArray();
+        rideOriginCount = new int[rideOriginNormalized.Length];
+        var current = 0;
+        foreach (var e in rideOriginNormalized) {
+            rideOriginCount[current] = Mathf.CeilToInt(maxTaxisPerLocation * e);
+            current++;
+        }
+
+        var count = 0;
+        foreach (var e in rideOriginCount) {
+            count += e;
+        }
+        Debug.Log("Total Taxis: " + count);
     }
 
     private List<List<float>> loadCSVMatrix(string file)
