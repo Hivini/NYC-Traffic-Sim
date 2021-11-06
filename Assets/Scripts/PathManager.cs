@@ -9,7 +9,7 @@ public class PathManager : MonoBehaviour
     public Text clockText;
     public GameObject taxiPrefab;
     public GameObject locationPrefab;
-    public float taxiSpeed = 250f;
+    public float maxTaxiSpeed = 250f;
     public float realSecondsPerDay = 60f;
     private float day;
 
@@ -19,9 +19,9 @@ public class PathManager : MonoBehaviour
     void Start()
     {
         dataManager = new DataManager();
+        // TODO(hivini): Change to real locations.
         CreateChildLocations();
         locations = new GameObject[DataManager.NUM_OF_ELEMENTS];
-        Debug.Log(transform.childCount);
         int c = 0;
         foreach (Transform child in transform)
         {
@@ -31,12 +31,16 @@ public class PathManager : MonoBehaviour
         for (int i = 0; i < 1000; i++) {
             var startIndex = Random.Range(0, DataManager.NUM_OF_ELEMENTS);
             var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
-            object[] taxiParams = new object[3] { locations[startIndex], locations[transitionIndex], transitionIndex };
+            var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
+            object[] taxiParams = new object[4] { 
+                locations[startIndex],
+                locations[transitionIndex],
+                transitionIndex,
+                speedIndex };
             StartCoroutine("NewTaxi", taxiParams);
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         day += Time.deltaTime / realSecondsPerDay;
@@ -102,6 +106,8 @@ public class PathManager : MonoBehaviour
         GameObject start = (GameObject)taxiParams[0];
         GameObject end = (GameObject)taxiParams[1];
         int transitionIndex = (int)taxiParams[2];
+        int speedIndex = (int)taxiParams[3];
+        var speed = dataManager.speedCDF[speedIndex];
         var path = DepthFirstSearch(start, end);
         int currentIndex = 0;
         int destinationIndex = path.Count;
@@ -112,7 +118,10 @@ public class PathManager : MonoBehaviour
             {
                 // Has arrived to destination
                 start = end;
-                transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[transitionIndex].ToArray());
+                transitionIndex = GetRandomWeightedIndex(
+                    dataManager.transitionMatrix[transitionIndex].ToArray());
+                speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
+                speed = dataManager.speedCDF[speedIndex];
                 end = locations[transitionIndex];
                 currentIndex = 0;
                 path = DepthFirstSearch(start, end);
@@ -121,7 +130,7 @@ public class PathManager : MonoBehaviour
             newTaxi.transform.position = Vector3.MoveTowards(
                 newTaxi.transform.position,
                 path[currentIndex].transform.position,
-                Time.deltaTime * 1 / realSecondsPerDay * taxiSpeed);
+                Time.deltaTime * 1 / realSecondsPerDay * maxTaxiSpeed * speed);
             // Probably the float numbers will cause an issue here if it's not close enough (?).
             if (newTaxi.transform.position == path[currentIndex].transform.position)
             {
@@ -216,18 +225,26 @@ internal class DataManager
     private const string TRANSITION_MATRIX_FILE = "taxis_transition_matrix.csv";
 
     public List<List<float>> transitionMatrix;
-    public List<List<float>> speedHistogram;
-    public List<List<float>> timeHistogram;
-    public List<float> rideOrigin;
+    public float[] speedHistogram;
+    public float[] speedCDF;
+    public float[] timeHistogram;
+    public float[] rideOrigin;
 
     public DataManager()
     {
-        transitionMatrix = loadCSV(TRANSITION_MATRIX_FILE);
-        speedHistogram = loadCSV(SPEED_FILE);
-        timeHistogram = loadCSV(TIME_HISTOGRAM_FILE);
+        transitionMatrix = loadCSVMatrix(TRANSITION_MATRIX_FILE);
+        timeHistogram = loadCSVLineList(TIME_HISTOGRAM_FILE).ToArray();
+        speedHistogram = loadCSVLineList(SPEED_FILE).ToArray();
+        var cdf = new List<float>();
+        float sum = 0;
+        foreach(var e in speedHistogram) {
+            sum += e;
+            cdf.Add(sum);
+        }
+        speedCDF = cdf.ToArray();
     }
 
-    private List<List<float>> loadCSV(string file)
+    private List<List<float>> loadCSVMatrix(string file)
     {
         StreamReader reader = new StreamReader(DEFAULT_PATH + file);
         var content = reader.ReadToEnd();
@@ -246,6 +263,20 @@ internal class DataManager
                 lineValues.Add(float.Parse(e));
             }
             values.Add(lineValues);
+        }
+        reader.Close();
+        return values;
+    }
+
+    private List<float> loadCSVLineList(string file) {
+        StreamReader reader = new StreamReader(DEFAULT_PATH + file);
+        var content = reader.ReadToEnd();
+        var line = content.Split('\n')[0];
+        var elements = line.Split(',');
+        var values = new List<float>();
+        foreach (var e in elements)
+        {
+            values.Add(float.Parse(e));
         }
         reader.Close();
         return values;
