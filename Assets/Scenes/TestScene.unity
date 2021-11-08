@@ -575,6 +575,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   clockText: {fileID: 289130739}
+  taxisNumberText: {fileID: 2079686646}
   taxiPrefab: {fileID: 3882887814622736446, guid: ef07ee638700c8643a0cbe4718e9fff7, type: 3}
   locationPrefab: {fileID: 7054937600904437792, guid: bb15418b2efefd448a5793edbcbf152d, type: 3}
   maxTaxiSpeed: 250
