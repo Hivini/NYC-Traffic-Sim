@@ -9,14 +9,15 @@ public class CameraMovement : MonoBehaviour
     private Camera cam;
 
 
-    void Start() {
+    void Start()
+    {
         cam = Camera.main;
     }
- 
- 
+
+
     void Update()
     {
-         if (Input.GetAxis("Mouse ScrollWheel") != 0f ) // forward
+        if (Input.GetAxis("Mouse ScrollWheel") != 0f) // forward
         {
             cam.orthographicSize += Input.GetAxis("Mouse ScrollWheel") * 2;
         }
@@ -25,12 +26,12 @@ public class CameraMovement : MonoBehaviour
         {
             dragOrigin = Input.mousePosition;
         }
- 
+
         if (!Input.GetMouseButton(0)) return;
- 
+
         Vector3 pos = cam.ScreenToViewportPoint(Input.mousePosition - dragOrigin);
         Vector3 move = new Vector3(pos.x * dragSpeed, pos.y * dragSpeed, 0);
- 
+
         transform.Translate(-move, Space.World);
     }
 }

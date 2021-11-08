@@ -29,18 +29,20 @@ public class PathManager : MonoBehaviour
             locations[c] = child.gameObject;
             c++;
         }
-        for (int l = 0; l < locations.Length; l++) {
-            for (int i = 0; i < dataManager.rideOriginCount[l]; i++) {
-            var startIndex = l;
-            var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
-            var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
-            object[] taxiParams = new object[4] { 
+        for (int l = 0; l < locations.Length; l++)
+        {
+            for (int i = 0; i < dataManager.rideOriginCount[l]; i++)
+            {
+                var startIndex = l;
+                var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
+                var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
+                object[] taxiParams = new object[4] {
                 locations[startIndex],
                 locations[transitionIndex],
                 transitionIndex,
                 speedIndex };
-            StartCoroutine("NewTaxi", taxiParams);
-        }
+                StartCoroutine("NewTaxi", taxiParams);
+            }
         }
     }
 
@@ -241,7 +243,8 @@ internal class DataManager
         speedHistogram = loadCSVLineList(SPEED_FILE).ToArray();
         var cdf = new List<float>();
         float sum = 0;
-        foreach(var e in speedHistogram) {
+        foreach (var e in speedHistogram)
+        {
             sum += e;
             cdf.Add(sum);
         }
@@ -249,13 +252,15 @@ internal class DataManager
         rideOriginNormalized = loadCSVLineList(RIDE_ORIGIN_FILE).ToArray();
         rideOriginCount = new int[rideOriginNormalized.Length];
         var current = 0;
-        foreach (var e in rideOriginNormalized) {
+        foreach (var e in rideOriginNormalized)
+        {
             rideOriginCount[current] = Mathf.CeilToInt(maxTaxisPerLocation * e);
             current++;
         }
 
         var count = 0;
-        foreach (var e in rideOriginCount) {
+        foreach (var e in rideOriginCount)
+        {
             count += e;
         }
         Debug.Log("Total Taxis: " + count);
@@ -285,7 +290,8 @@ internal class DataManager
         return values;
     }
 
-    private List<float> loadCSVLineList(string file) {
+    private List<float> loadCSVLineList(string file)
+    {
         StreamReader reader = new StreamReader(DEFAULT_PATH + file);
         var content = reader.ReadToEnd();
         var line = content.Split('\n')[0];

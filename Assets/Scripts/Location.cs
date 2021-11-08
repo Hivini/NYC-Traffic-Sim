@@ -8,11 +8,12 @@ public class Location : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (nextLocations != null && nextLocations.Count != 0) {
+        if (nextLocations != null && nextLocations.Count != 0)
+        {
             Gizmos.color = Color.blue;
             foreach (var path in nextLocations)
             {
-                Gizmos.DrawLine(transform.position, path.transform.position);   
+                Gizmos.DrawLine(transform.position, path.transform.position);
             }
         }
         Gizmos.color = Color.red;
