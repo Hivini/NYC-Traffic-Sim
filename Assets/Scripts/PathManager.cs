@@ -7,6 +7,7 @@ using System.IO;
 public class PathManager : MonoBehaviour
 {
     public Text clockText;
+    public Text taxisNumberText;
     public GameObject taxiPrefab;
     public GameObject locationPrefab;
     public float maxTaxiSpeed = 250f;
@@ -16,10 +17,19 @@ public class PathManager : MonoBehaviour
     private float day;
     private DataManager dataManager;
     private GameObject[] locations;
+    private int targetScreenTaxis;
+    private readonly object currentTaxisNumLock = new object();
+    private readonly object neededTaxisLock = new object();
+    private int currentTaxisNum;
+    private int neededTaxis;
+
 
     void Start()
     {
         dataManager = new DataManager(maxStartTaxisPerLocation);
+        currentTaxisNum = 0;
+        targetScreenTaxis = 0;
+        neededTaxis = 0;
         // TODO(hivini): Change to real locations.
         CreateChildLocations();
         locations = new GameObject[DataManager.NUM_OF_ELEMENTS];
@@ -33,15 +43,8 @@ public class PathManager : MonoBehaviour
         {
             for (int i = 0; i < dataManager.rideOriginCount[l]; i++)
             {
-                var startIndex = l;
-                var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
-                var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
-                object[] taxiParams = new object[4] {
-                locations[startIndex],
-                locations[transitionIndex],
-                transitionIndex,
-                speedIndex };
-                StartCoroutine("NewTaxi", taxiParams);
+                CreateNewTaxi(i);
+                targetScreenTaxis += 1;
             }
         }
     }
@@ -55,6 +58,46 @@ public class PathManager : MonoBehaviour
         string minutesString = Mathf.Floor(((dayNormalized * 24) % 1f) * 60f).ToString("00");
 
         clockText.text = $"Time {hoursString}:{minutesString}";
+        taxisNumberText.text = $"Current Taxis: {currentTaxisNum}";
+
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            UpdateTaxisNeeded(10);
+        }
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            UpdateTaxisNeeded(-10);
+        }
+        lock (neededTaxisLock)
+        {
+            if (neededTaxis > 0)
+            {
+                // TODO(hivini): Normalize the origin count to get a weighted probability.
+                CreateNewTaxi(Random.Range(0, 265));
+                neededTaxis--;
+            }
+        }
+    }
+
+    private void CreateNewTaxi(int startIndex)
+    {
+        var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
+        var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
+        object[] taxiParams = new object[4] {
+                locations[startIndex],
+                locations[transitionIndex],
+                transitionIndex,
+                speedIndex };
+        StartCoroutine("NewTaxi", taxiParams);
+    }
+
+    private void UpdateTaxisNeeded(int difference)
+    {
+        lock (currentTaxisNumLock) lock (neededTaxisLock)
+            {
+                targetScreenTaxis += difference;
+                neededTaxis = targetScreenTaxis - currentTaxisNum;
+            }
     }
 
     private void CreateChildLocations()
@@ -117,10 +160,24 @@ public class PathManager : MonoBehaviour
         int currentIndex = 0;
         int destinationIndex = path.Count;
         var newTaxi = Instantiate(taxiPrefab, start.transform.position, taxiPrefab.transform.rotation);
+        lock (currentTaxisNumLock)
+        {
+            currentTaxisNum++;
+        }
         while (true)
         {
             if (currentIndex >= destinationIndex)
             {
+                lock (neededTaxisLock) lock (currentTaxisNumLock)
+                    {
+                        if (neededTaxis < 0)
+                        {
+                            Destroy(newTaxi);
+                            neededTaxis++;
+                            currentTaxisNum--;
+                            break;
+                        }
+                    }
                 // Has arrived to destination
                 start = end;
                 transitionIndex = GetRandomWeightedIndex(
@@ -263,7 +320,7 @@ internal class DataManager
         {
             count += e;
         }
-        Debug.Log("Total Taxis: " + count);
+        Debug.Log("Total Start Taxis: " + count);
     }
 
     private List<List<float>> loadCSVMatrix(string file)
