@@ -13,6 +13,7 @@ public class PathManager : MonoBehaviour
     public float maxTaxiSpeed = 250f;
     public float realSecondsPerDay = 60f;
     public int maxStartTaxisPerLocation = 500;
+    public int maxTaxisNumber = 4000;
 
     private float day;
     private DataManager dataManager;
@@ -23,6 +24,9 @@ public class PathManager : MonoBehaviour
     private int currentTaxisNum;
     private int neededTaxis;
 
+    private int previousMinute;
+    private int currentMinute;
+
 
     void Start()
     {
@@ -30,6 +34,9 @@ public class PathManager : MonoBehaviour
         currentTaxisNum = 0;
         targetScreenTaxis = 0;
         neededTaxis = 0;
+        // Define the minute index, 1 unit represents 10 minutes.
+        previousMinute = -1;
+        currentMinute = 0;
         // TODO(hivini): Change to real locations.
         CreateChildLocations();
         locations = new GameObject[DataManager.NUM_OF_ELEMENTS];
@@ -53,6 +60,7 @@ public class PathManager : MonoBehaviour
     {
         day += Time.deltaTime / realSecondsPerDay;
         float dayNormalized = day % 1f;
+        currentMinute = Mathf.FloorToInt((((dayNormalized * 24) % 24f) * 60f) / 10);
 
         string hoursString = Mathf.Floor(dayNormalized * 24f).ToString("00");
         string minutesString = Mathf.Floor(((dayNormalized * 24) % 1f) * 60f).ToString("00");
@@ -60,19 +68,28 @@ public class PathManager : MonoBehaviour
         clockText.text = $"Time {hoursString}:{minutesString}";
         taxisNumberText.text = $"Current Taxis: {currentTaxisNum}";
 
-        if (Input.GetKeyDown(KeyCode.A))
+        if (currentMinute != previousMinute)
         {
-            UpdateTaxisNeeded(10);
-        }
-        if (Input.GetKeyDown(KeyCode.B))
-        {
-            UpdateTaxisNeeded(-10);
+            int previousMinute = currentMinute;
+            lock (currentTaxisNumLock)
+            {
+                UpdateTaxisNeeded(
+                    Mathf.RoundToInt(
+                        dataManager.timeHistogram[currentMinute] * maxTaxisNumber) - targetScreenTaxis);
+            }
         }
         lock (neededTaxisLock)
         {
             if (neededTaxis > 0)
             {
-                // TODO(hivini): Normalize the origin count to get a weighted probability.
+                // This might seem silly but it is needed if the time is fast.
+                // We can delete this or adjust, I just put an arbitrary number for now
+                if (neededTaxis >= 5) {
+                    for (int i = 0; i < 4; i++) {
+                        CreateNewTaxi(Random.Range(0, 265));
+                        neededTaxis--;
+                    }
+                }
                 CreateNewTaxi(Random.Range(0, 265));
                 neededTaxis--;
             }
@@ -82,7 +99,7 @@ public class PathManager : MonoBehaviour
     private void CreateNewTaxi(int startIndex)
     {
         var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
-        var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
+        var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram) + 1;
         object[] taxiParams = new object[4] {
                 locations[startIndex],
                 locations[transitionIndex],
@@ -97,6 +114,7 @@ public class PathManager : MonoBehaviour
             {
                 targetScreenTaxis += difference;
                 neededTaxis = targetScreenTaxis - currentTaxisNum;
+                Debug.Log(targetScreenTaxis);
             }
     }
 
@@ -182,7 +200,7 @@ public class PathManager : MonoBehaviour
                 start = end;
                 transitionIndex = GetRandomWeightedIndex(
                     dataManager.transitionMatrix[transitionIndex].ToArray());
-                speed = GetRandomWeightedIndex(dataManager.speedHistogram);
+                speed = GetRandomWeightedIndex(dataManager.speedHistogram) + 1;
                 end = locations[transitionIndex];
                 currentIndex = 0;
                 path = DepthFirstSearch(start, end);
