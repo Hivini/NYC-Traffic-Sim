@@ -155,7 +155,7 @@ public class PathManager : MonoBehaviour
         GameObject end = (GameObject)taxiParams[1];
         int transitionIndex = (int)taxiParams[2];
         int speedIndex = (int)taxiParams[3];
-        var speed = dataManager.speedCDF[speedIndex];
+        var speed = speedIndex;
         var path = DepthFirstSearch(start, end);
         int currentIndex = 0;
         int destinationIndex = path.Count;
@@ -182,8 +182,7 @@ public class PathManager : MonoBehaviour
                 start = end;
                 transitionIndex = GetRandomWeightedIndex(
                     dataManager.transitionMatrix[transitionIndex].ToArray());
-                speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram);
-                speed = dataManager.speedCDF[speedIndex];
+                speed = GetRandomWeightedIndex(dataManager.speedHistogram);
                 end = locations[transitionIndex];
                 currentIndex = 0;
                 path = DepthFirstSearch(start, end);
@@ -288,7 +287,6 @@ internal class DataManager
 
     public List<List<float>> transitionMatrix;
     public float[] speedHistogram;
-    public float[] speedCDF;
     public float[] timeHistogram;
     public float[] rideOriginNormalized;
     public int[] rideOriginCount;
@@ -298,14 +296,6 @@ internal class DataManager
         transitionMatrix = loadCSVMatrix(TRANSITION_MATRIX_FILE);
         timeHistogram = loadCSVLineList(TIME_HISTOGRAM_FILE).ToArray();
         speedHistogram = loadCSVLineList(SPEED_FILE).ToArray();
-        var cdf = new List<float>();
-        float sum = 0;
-        foreach (var e in speedHistogram)
-        {
-            sum += e;
-            cdf.Add(sum);
-        }
-        speedCDF = cdf.ToArray();
         rideOriginNormalized = loadCSVLineList(RIDE_ORIGIN_FILE).ToArray();
         rideOriginCount = new int[rideOriginNormalized.Length];
         var current = 0;
