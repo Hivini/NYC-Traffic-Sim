@@ -44,7 +44,6 @@ public class PathManager : MonoBehaviour
             locations[c] = child.gameObject;
             c++;
         }
-        Debug.Log(locations.Length);
         for (int l = 0; l < locations.Length; l++)
         {
             for (int i = 0; i < dataManager.rideOriginCount[l]; i++)
@@ -99,7 +98,6 @@ public class PathManager : MonoBehaviour
     {
         var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
         var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram) + 1;
-        Debug.Log(locations[startIndex]);
         object[] taxiParams = new object[4] {
                 locations[startIndex],
                 locations[transitionIndex],
@@ -114,7 +112,6 @@ public class PathManager : MonoBehaviour
             {
                 targetScreenTaxis += difference;
                 neededTaxis = targetScreenTaxis - currentTaxisNum;
-                Debug.Log(targetScreenTaxis);
             }
     }
 
