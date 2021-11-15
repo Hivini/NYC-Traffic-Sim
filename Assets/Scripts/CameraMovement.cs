@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CameraMovement : MonoBehaviour
 {
-    public float dragSpeed = 2;
+    public float dragSpeed = 0.2f;
     private Vector3 dragOrigin;
     private Camera cam;
 
@@ -19,7 +19,8 @@ public class CameraMovement : MonoBehaviour
     {
         if (Input.GetAxis("Mouse ScrollWheel") != 0f) // forward
         {
-            cam.orthographicSize += Input.GetAxis("Mouse ScrollWheel") * 2;
+            var newValue = cam.orthographicSize + Input.GetAxis("Mouse ScrollWheel") * 2;
+            cam.orthographicSize = Mathf.Clamp(newValue, 0.20f, 15);
         }
 
         if (Input.GetMouseButtonDown(0))

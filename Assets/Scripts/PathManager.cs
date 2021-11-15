@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.IO;
 
 public class PathManager : MonoBehaviour
@@ -10,12 +11,15 @@ public class PathManager : MonoBehaviour
     public Text taxisNumberText;
     public GameObject taxiPrefab;
     public GameObject locationPrefab;
+    public Button speedButton;
+    public TextMeshProUGUI speedButtonText;
     public float maxTaxiSpeed = 250f;
-    public float realSecondsPerDay = 60f;
+    public float realSecondsPerDay = 120f;
     public int maxStartTaxisPerLocation = 500;
     public int maxTaxisNumber = 4000;
 
     private float day;
+    private float currentRealSecondsPerDay;
     private DataManager dataManager;
     private GameObject[] locations;
     private int targetScreenTaxis;
@@ -26,6 +30,8 @@ public class PathManager : MonoBehaviour
 
     private int previousMinute;
     private int currentMinute;
+    private int buttonSpeedIndex = 0;
+    private float[] buttonSpeeds = {1f, 2f, 4f, 0.25f, 0.5f};
 
 
     void Start()
@@ -52,11 +58,14 @@ public class PathManager : MonoBehaviour
                 targetScreenTaxis += 1;
             }
         }
+        currentRealSecondsPerDay = realSecondsPerDay;
+        speedButton.onClick.AddListener(ChangeSpeed);
+        speedButtonText.text = $"x{buttonSpeeds[buttonSpeedIndex]}";
     }
 
     void Update()
     {
-        day += Time.deltaTime / realSecondsPerDay;
+        day += Time.deltaTime / currentRealSecondsPerDay;
         float dayNormalized = day % 1f;
         currentMinute = Mathf.FloorToInt((((dayNormalized * 24) % 24f) * 60f) / 10);
 
@@ -92,6 +101,12 @@ public class PathManager : MonoBehaviour
                 neededTaxis--;
             }
         }
+    }
+
+    public void ChangeSpeed() {
+        buttonSpeedIndex = (buttonSpeedIndex + 1) % buttonSpeeds.Length;
+        speedButtonText.text = $"x{buttonSpeeds[buttonSpeedIndex]}";
+        currentRealSecondsPerDay = realSecondsPerDay / buttonSpeeds[buttonSpeedIndex];
     }
 
     private void CreateNewTaxi(int startIndex)
@@ -157,7 +172,7 @@ public class PathManager : MonoBehaviour
             newTaxi.transform.position = Vector3.MoveTowards(
                 newTaxi.transform.position,
                 path[currentIndex].transform.position,
-                Time.deltaTime * 1 / realSecondsPerDay * maxTaxiSpeed * speed);
+                Time.deltaTime * 1 / currentRealSecondsPerDay * maxTaxiSpeed * speed);
             // Probably the float numbers will cause an issue here if it's not close enough (?).
             if (newTaxi.transform.position == path[currentIndex].transform.position)
             {

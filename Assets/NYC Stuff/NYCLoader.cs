@@ -19,7 +19,8 @@ public class NYCLoader : MonoBehaviour
         var startY = renderer.sprite.bounds.max.y;
         var locations = ReadLocations(maxX, maxY, startX, startY);
         var locationsMap = new Dictionary<string, List<GameObject>>();
-        foreach(var location in locations) {
+        foreach (var location in locations)
+        {
             GameObject go = Instantiate(
                 locationPrefab,
                 location.worldLocation,
@@ -27,9 +28,12 @@ public class NYCLoader : MonoBehaviour
             go.transform.parent = pathManager.transform;
             go.gameObject.name = location.name;
             var k = location.name.Split(',')[0];
-            if (locationsMap.ContainsKey(k)) {
+            if (locationsMap.ContainsKey(k))
+            {
                 locationsMap[k].Add(go);
-            } else {
+            }
+            else
+            {
                 var tmp = new List<GameObject>();
                 tmp.Add(go);
                 locationsMap[k] = tmp;
@@ -49,6 +53,36 @@ public class NYCLoader : MonoBehaviour
                 }
             }
         }
+
+
+        // For reference only. All zone nodes connected, RIP PC.
+
+        // string previousKey = null;
+        // foreach (var key in locationsMap.Keys)
+        // {
+        //     if (previousKey == null)
+        //     {
+        //         previousKey = key;
+        //     }
+        //     else
+        //     {
+        //         var previousLoc = locationsMap[previousKey][0];
+        //         var currentLoc = locationsMap[key][0];
+        //         previousLoc.GetComponent<Location>().nextLocations.Add(currentLoc);
+        //         currentLoc.GetComponent<Location>().nextLocations.Add(previousLoc);
+        //     }
+        //     foreach (var loc1 in locationsMap[key])
+        //     {
+        //         foreach (var loc2 in locationsMap[key])
+        //         {
+        //             if (loc1 != loc2)
+        //             {
+        //                 loc1.GetComponent<Location>().nextLocations.Add(loc2);
+        //                 loc2.GetComponent<Location>().nextLocations.Add(loc1);
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     NYCLocation[] ReadLocations(float maxX, float maxY, float startX, float startY)
