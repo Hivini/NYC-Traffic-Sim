@@ -18,7 +18,7 @@ public class NYCLoader : MonoBehaviour
         var startX = renderer.sprite.bounds.min.x;
         var startY = renderer.sprite.bounds.max.y;
         var locations = ReadLocations(maxX, maxY, startX, startY);
-        GameObject previous = null;
+        var locationsMap = new Dictionary<string, List<GameObject>>();
         foreach(var location in locations) {
             GameObject go = Instantiate(
                 locationPrefab,
@@ -26,12 +26,27 @@ public class NYCLoader : MonoBehaviour
                 transform.rotation);
             go.transform.parent = pathManager.transform;
             go.gameObject.name = location.name;
-            if (previous == null) {
-                previous = go;   
+            var k = location.name.Split(',')[0];
+            if (locationsMap.ContainsKey(k)) {
+                locationsMap[k].Add(go);
             } else {
-                previous.GetComponent<Location>().nextLocations.Add(go);
-                go.GetComponent<Location>().nextLocations.Add(previous);
-                previous = go;
+                var tmp = new List<GameObject>();
+                tmp.Add(go);
+                locationsMap[k] = tmp;
+            }
+        }
+
+        GameObject previous = null;
+        foreach(var key in locationsMap.Keys) {
+            Debug.Log(key);
+            foreach(var loc in locationsMap[key]) {
+                if (previous == null) {
+                    previous = loc;   
+                } else {
+                    previous.GetComponent<Location>().nextLocations.Add(loc);
+                    loc.GetComponent<Location>().nextLocations.Add(previous);
+                    previous = loc;
+                }
             }
         }
     }
