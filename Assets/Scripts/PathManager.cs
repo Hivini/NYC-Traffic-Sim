@@ -37,8 +37,6 @@ public class PathManager : MonoBehaviour
         // Define the minute index, 1 unit represents 10 minutes.
         previousMinute = -1;
         currentMinute = 0;
-        // TODO(hivini): Change to real locations.
-        CreateChildLocations();
         locations = new GameObject[DataManager.NUM_OF_ELEMENTS];
         int c = 0;
         foreach (Transform child in transform)
@@ -46,6 +44,7 @@ public class PathManager : MonoBehaviour
             locations[c] = child.gameObject;
             c++;
         }
+        Debug.Log(locations.Length);
         for (int l = 0; l < locations.Length; l++)
         {
             for (int i = 0; i < dataManager.rideOriginCount[l]; i++)
@@ -100,6 +99,7 @@ public class PathManager : MonoBehaviour
     {
         var transitionIndex = GetRandomWeightedIndex(dataManager.transitionMatrix[startIndex].ToArray());
         var speedIndex = GetRandomWeightedIndex(dataManager.speedHistogram) + 1;
+        Debug.Log(locations[startIndex]);
         object[] taxiParams = new object[4] {
                 locations[startIndex],
                 locations[transitionIndex],
@@ -116,55 +116,6 @@ public class PathManager : MonoBehaviour
                 neededTaxis = targetScreenTaxis - currentTaxisNum;
                 Debug.Log(targetScreenTaxis);
             }
-    }
-
-    private void CreateChildLocations()
-    {
-        GameObject parent = Instantiate(
-            locationPrefab,
-            transform.position + new Vector3(0, 1, 0),
-            transform.rotation);
-        parent.transform.parent = transform;
-        parent.gameObject.name = $"Location PADRE";
-
-        GameObject previous1 = parent;
-        GameObject previous2 = parent;
-        bool connect = false;
-        for (int i = 0; i < 264; i += 2)
-        {
-            GameObject child1 = Instantiate(
-                locationPrefab,
-                transform.position + new Vector3(-5, -i, 0),
-                transform.rotation);
-            child1.transform.parent = transform;
-            child1.gameObject.name = $"Location {i + 1}";
-            GameObject child2 = Instantiate(
-                locationPrefab,
-                transform.position + new Vector3(5, -i, 0),
-                transform.rotation);
-            child2.transform.parent = transform;
-            child2.gameObject.name = $"Location {i + 2}";
-
-            if (previous1 != null)
-            {
-                previous1.GetComponent<Location>().nextLocations.Add(child1);
-                child1.GetComponent<Location>().nextLocations.Add(previous1);
-            }
-            previous1 = child1;
-            if (previous2 != null)
-            {
-                previous2.GetComponent<Location>().nextLocations.Add(child2);
-                child2.GetComponent<Location>().nextLocations.Add(previous2);
-            }
-            previous2 = child2;
-
-            if (connect)
-            {
-                child1.GetComponent<Location>().nextLocations.Add(child2);
-                child2.GetComponent<Location>().nextLocations.Add(child1);
-            }
-            connect = !connect;
-        }
     }
 
     IEnumerator NewTaxi(object[] taxiParams)
