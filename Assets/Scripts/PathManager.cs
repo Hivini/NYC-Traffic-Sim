@@ -31,7 +31,7 @@ public class PathManager : MonoBehaviour
     private int previousMinute;
     private int currentMinute;
     private int buttonSpeedIndex = 0;
-    private float[] buttonSpeeds = {1f, 2f, 4f, 0.25f, 0.5f};
+    private float[] buttonSpeeds = { 1f, 2f, 4f, 0.25f, 0.5f };
 
 
     void Start()
@@ -91,8 +91,10 @@ public class PathManager : MonoBehaviour
             {
                 // This might seem silly but it is needed if the time is fast.
                 // We can delete this or adjust, I just put an arbitrary number for now
-                if (neededTaxis >= 5) {
-                    for (int i = 0; i < 4; i++) {
+                if (neededTaxis >= 5)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
                         CreateNewTaxi(Random.Range(0, 265));
                         neededTaxis--;
                     }
@@ -103,7 +105,8 @@ public class PathManager : MonoBehaviour
         }
     }
 
-    public void ChangeSpeed() {
+    public void ChangeSpeed()
+    {
         buttonSpeedIndex = (buttonSpeedIndex + 1) % buttonSpeeds.Length;
         speedButtonText.text = $"x{buttonSpeeds[buttonSpeedIndex]}";
         currentRealSecondsPerDay = realSecondsPerDay / buttonSpeeds[buttonSpeedIndex];
@@ -260,12 +263,10 @@ public class PathManager : MonoBehaviour
 internal class DataManager
 {
     public const int NUM_OF_ELEMENTS = 265;
-    private const string DEFAULT_PATH = "Assets/Data/";
-    private const string RIDE_ORIGIN_FILE = "taxis_ride_origin_normalized.csv";
-    private const string SPEED_FILE = "taxis_speed_histogram.csv";
-    private const string TIME_HISTOGRAM_FILE = "taxis_time_histogram_window_of_10_minutes.csv";
-    private const string TRANSITION_MATRIX_FILE = "taxis_transition_matrix.csv";
-
+    private TextAsset RIDE_ORIGIN_FILE = Resources.Load<TextAsset>("Data/taxis_ride_origin_normalized");
+    private TextAsset SPEED_FILE = Resources.Load<TextAsset>("Data/taxis_speed_histogram");
+    private TextAsset TIME_HISTOGRAM_FILE = Resources.Load<TextAsset>("Data/taxis_time_histogram_window_of_10_minutes");
+    private TextAsset TRANSITION_MATRIX_FILE = Resources.Load<TextAsset>("Data/taxis_transition_matrix");
     public List<List<float>> transitionMatrix;
     public float[] speedHistogram;
     public float[] timeHistogram;
@@ -294,10 +295,9 @@ internal class DataManager
         Debug.Log("Total Start Taxis: " + count);
     }
 
-    private List<List<float>> loadCSVMatrix(string file)
+    private List<List<float>> loadCSVMatrix(TextAsset textFile)
     {
-        StreamReader reader = new StreamReader(DEFAULT_PATH + file);
-        var content = reader.ReadToEnd();
+        var content = textFile.text;
         var lines = content.Split('\n');
         var values = new List<List<float>>();
         foreach (var line in lines)
@@ -314,14 +314,12 @@ internal class DataManager
             }
             values.Add(lineValues);
         }
-        reader.Close();
         return values;
     }
 
-    private List<float> loadCSVLineList(string file)
+    private List<float> loadCSVLineList(TextAsset textFile)
     {
-        StreamReader reader = new StreamReader(DEFAULT_PATH + file);
-        var content = reader.ReadToEnd();
+        var content = textFile.text;
         var line = content.Split('\n')[0];
         var elements = line.Split(',');
         var values = new List<float>();
@@ -329,7 +327,6 @@ internal class DataManager
         {
             values.Add(float.Parse(e));
         }
-        reader.Close();
         return values;
     }
 }

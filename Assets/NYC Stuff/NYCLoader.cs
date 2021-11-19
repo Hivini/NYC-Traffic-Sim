@@ -8,10 +8,11 @@ public class NYCLoader : MonoBehaviour
     public GameObject locationPrefab;
     public GameObject pathManager;
 
-    private const string LOCATIONS_FILE = "Assets/NYC Stuff/taxis_locations_and_rel_pos_in_map.txt";
+    private TextAsset LOCATIONS_FILE;
 
     void Awake()
     {
+        LOCATIONS_FILE = Resources.Load<TextAsset>("Data/taxis_locations_and_rel_pos_in_map");
         var renderer = GetComponent<SpriteRenderer>();
         var maxX = renderer.bounds.size.x;
         var maxY = renderer.bounds.size.y;
@@ -41,12 +42,17 @@ public class NYCLoader : MonoBehaviour
         }
 
         GameObject previous = null;
-        foreach(var key in locationsMap.Keys) {
+        foreach (var key in locationsMap.Keys)
+        {
             Debug.Log(key);
-            foreach(var loc in locationsMap[key]) {
-                if (previous == null) {
-                    previous = loc;   
-                } else {
+            foreach (var loc in locationsMap[key])
+            {
+                if (previous == null)
+                {
+                    previous = loc;
+                }
+                else
+                {
                     previous.GetComponent<Location>().nextLocations.Add(loc);
                     loc.GetComponent<Location>().nextLocations.Add(previous);
                     previous = loc;
@@ -87,8 +93,7 @@ public class NYCLoader : MonoBehaviour
 
     NYCLocation[] ReadLocations(float maxX, float maxY, float startX, float startY)
     {
-        StreamReader reader = new StreamReader(LOCATIONS_FILE);
-        var content = reader.ReadToEnd();
+        var content = LOCATIONS_FILE.text;
         var lines = content.Split('\n');
         var locations = new List<NYCLocation>();
         foreach (var line in lines)
@@ -107,8 +112,6 @@ public class NYCLoader : MonoBehaviour
                     startY - maxY * relY,
                     transform.position.z, name));
         }
-        reader.Close();
-
         return locations.ToArray();
     }
 }
